@@ -1,0 +1,29 @@
+1A
+Did you perform any "cleaning" of the data? (e.g. handle upper vs. lower case, strip punctuation or unusual characters, etc.). 
+Hint: don't spend too much time on cleaning. Simpler is better.
+
+    - Make all words into a single lowercase 
+    - Remove all non alphabet characters
+
+How did you determine the final vocabulary set? Did you exclude any words? If so, why?
+
+    - Remove common words like "the", "I", "a", etc. We do this to not bloat the vocab set. 
+    
+What was your final vocabulary size? If size varies across folds because it depends on the training set, please provide the typical size ranges.
+
+
+Did you use counts or binary values or something else?
+
+How does your approach handle out-of-vocabulary words in the test set? (you are allowed to just ignore them, but you should do this intentionally and your report should state clearly what is happening in your implementation and why).
+
+Did you use off-the-shelf libraries? Or implement from scratch?
+
+
+
+
+1B
+What performance metric will your search try to optimize on heldout data?
+How many folds? How big is each fold?
+Are folds just split at random? Did you you use other information to construct folds? Remember, your goal is to generalize from provided train set to provided test set.
+After using CV to identify a selected hyperparameter configuration, how will you then build one "final" model to apply on the test set?
+Did you use off-the-shelf libraries? Or implement from scratch?
