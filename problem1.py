@@ -2,10 +2,16 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import pandas as pd
 import os
-
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+# import seaborn as sns
+# plt.style.use('seaborn-v0_8') # pretty matplotlib plots
+# sns.set('notebook', style='whitegrid', font_scale=1.25)
 
 
 # from sklearn.model_selection import KFold
@@ -53,6 +59,24 @@ def load_and_process_data(dir_path, x_tr_path, y_tr_path):
 
     return x_tr_raw, y_tr_raw
 
+def plot_c_vs_ROC(grid_search, param_grid):
+    C_values = param_grid['clf__C']
+    train_scores = grid_search.cv_results_['mean_train_score']
+    test_scores = grid_search.cv_results_['mean_test_score']
+
+    # Plotting the performance
+    plt.figure(figsize=(10, 6))
+    plt.plot(C_values, train_scores, label="Train AUC", marker="o")
+    plt.plot(C_values, test_scores, label="Test AUC", marker="o")
+
+    plt.xscale("log")  # Log scale for better visualization
+    plt.xlabel("C")
+    plt.ylabel("AUC Score")
+    plt.title("C value vs AUC Score")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
 
 if __name__ == '__main__':
     x_tr_raw, y_tr_raw = load_and_process_data('data_readinglevel', 'x_train.csv', 'y_train.csv')
@@ -60,12 +84,21 @@ if __name__ == '__main__':
 
     # Creating pipeline that vectorizes x_tr_raw and preforms log regression
     pipeline = Pipeline([
-        ('vect', CountVectorizer(lowercase=True, min_df=10)), # TODO Experiement with preprocessing here
+        # ('vect', CountVectorizer(lowercase=True, min_df=1)), # TODO Experiement with preprocessing here
+        ('vect', CountVectorizer(lowercase=True, min_df = 1)),
         ('clf', LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000))
     ])
 
+
+
     param_grid = {
-        'clf__C': [0.01, 0.1, 1, 10, 100] # TODO Find better values here
+        # 'clf__C' : [0.625055192527395],
+        'clf__C': np.logspace(-5, 5, 50)
+
+        # 'clf__C': np.logspace(-10, 10, 50) # TODO Find better values here 
+        # 'clf__C': np.logspace(-5.857143, 4.142857,11)
+
+        ##alpha_list = np.logspace(-10, 6, 17)
     }
 
     # Picking best hyperparameters with CV
@@ -78,12 +111,12 @@ if __name__ == '__main__':
     print("Best hyperparameter C:", grid_search.best_params_)
     print("Best CV AUROC:", grid_search.best_score_)
 
+
     # Training best model and predicting on test set
     best_model = grid_search.best_estimator_
     best_model.fit(x_tr_raw, y_tr_N)
 
     x_te_raw = pd.read_csv(os.path.join('data_readinglevel', "x_test.csv"))['text'].tolist()
-
     # print(x_te_raw)
 
 
@@ -94,99 +127,71 @@ if __name__ == '__main__':
     # print("te", yproba1_te)
 
 
+    # Graphing Stuff
+    results = grid_search.cv_results_
+
+  
+
+    # print(results)
+
+    plot_c_vs_ROC(grid_search, param_grid)
+
+
+
+
+
     # Saving x_test positive probabilities to a file
     np.savetxt("yproba1_test.txt", yproba1_te, fmt="%.6f")
     np.savetxt("yproba1_train.txt", yproba1_tr, fmt="%.6f")
 
 
-
-
-
-
-# if __name__ == '__main__':
-#     data_dir = 'data_readinglevel'
-#     x_train_df = pd.read_csv(os.path.join(data_dir, 'x_train.csv'))
-#     y_train_df = pd.read_csv(os.path.join(data_dir, 'y_train.csv'))
-
-#     N, n_cols = x_train_df.shape
-#     print("Shape of x_train_df: (%d, %d)" % (N, n_cols))
-#     print("Shape of y_train_df: %s" % str(y_train_df.shape))
-
-#     # Print out 8 random entries
-#     tr_text_list = x_train_df['text'].values.tolist()
-#     y_rawData_list = np.array(y_train_df['Coarse Label'].values.tolist())
-
-#     # print(type(y_rawData_list))
-
-
-#     y_rawData_N = (y_rawData_list == "Key Stage 4-5").astype(int)
- 
-    
-#     print(y_rawData_N)
-    
-#     # TODO: Figure out what to store
-#     vectorizer = CountVectorizer(lowercase=True, analyzer='word', token_pattern=r'[a-zA-Z]*')
-#     coords_occur_list = vectorizer.fit_transform(tr_text_list)
-#     word_list = vectorizer.get_feature_names_out(tr_text_list)
-#     x_rawData_NF = vectorizer.fit_transform(tr_text_list).toarray()
-
-#     x_train_df = trimboth(x_train_df, 0.25)
-#     y_train_df = trimboth(y_train_df, 0.25)
-    
-    
-#     N, F = x_rawData_NF.shape
-#     N1, = y_rawData_N.shape
-
-#     assert(N == N1)
-
-#     # Preprocessing the data
-#     scaler = preprocessing.StandardScaler().fit(x_rawData_NF)
-#     x_rawData_NF = scaler.transform(x_rawData_NF)
-
-#     # print(x_rawData_NF.shape)
-#     # print(y_rawData_list.shape)
     
 
-#     # print(coords_occur_list.toarray())
+
+
+'''
+    CountVectorizer(lowercase=True, min_df=10)
+    'clf__C': [0.01, 0.1, 1, 10, 100]
+    0.7859991537570853
+
+    CountVectorizer(lowercase=True, min_df=10)
+    np.logspace(-10, 6, 20)
+    0.7861957353758151
+
+    CountVectorizer(lowercase=True, min_df=10)
+    clf__C': np.logspace(-10, 6, 50)
+    0.7858031039027337
+
+    CountVectorizer(lowercase=True)
+    clf__C : 0.1389495494373136
+    0.8135651630667169
+
+    ('vect', CountVectorizer(lowercase=True)
+     'clf__C': np.logspace(-5.857143, 4.142857,11)
+    0.8182692670411618
     
-#     clf = sklearn.linear_model.LogisticRegression(penalty='l2',C=1.0, max_iter=5000, solver='lbfgs')
-#     print("N", N)
-#     print("F", F)
+    max_df = 0.5 
+    Best CV AUROC: 0.8169414974473194
 
-#     x_tr, x_te, y_tr, y_te = train_test_split(x_rawData_NF, y_rawData_N, test_size=0.2, random_state=69)
+    ('vect', CountVectorizer(lowercase=True, max_df=0.7))
+    0.8173088690175188
 
-#     kf = KFold(n_splits=5, shuffle=True, random_state=69, )
+    ('vect', CountVectorizer(lowercase=True, min_df=5))
+    0.8032191243189871
 
-#     model_per_fold = list() 
-#     tr_err_list = list()
-#     te_err_list = list()
-    
-#     for train_idx, test_idx in kf.split(x_tr):
-#         x_train_split, x_test_split = x_tr[train_idx], x_tr[test_idx]
-#         y_train_split, y_test_split = y_tr[train_idx], y_tr[test_idx]
-        
-#         model_per_fold.append(clf.fit(x_train_split, y_train_split))
-#         tr_err_list.append(1 - clf.score(x_train_split, y_train_split))
-#         te_err_list.append(1 - clf.score(x_test_split, y_test_split))
-        
+    this is the score with kFolds
+Best hyperparameter C: {'clf__C': 10.0} tdif vectorizor
+Best CV AUROC: 0.8348367960217086
 
+%                                       
 
+'''
 
-    # print("Training Error", tr_err_list)
-    # print("Test Error", te_err_list)
-
-  
-
-    ##cross validae 6 folds/ 4 train 2 /test/
-
-
-    
-    
 
     
 
 
-    '''
+'''
     Stuff to look into
         - Vectorizer function cuts off contractions at the ' (e.g. don't -> don)
 
